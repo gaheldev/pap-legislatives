@@ -44,7 +44,15 @@
             radius: parseFloat(building["Voix estimées"]) / 2, // Adjust the scaling factor as needed
           }).addTo(map);
 
-          circle.bindPopup(`${building.Rue} ${building.Adresse}<br>Voix estimées: ${building["Voix estimées"]}`);
+          const tooltipContent = `${building.Adresse}<br>Voix estimées: ${parseFloat(building["Voix estimées"]) < 0 ? 0 : parseFloat(building["Voix estimées"]).toFixed(1)}<br>Score LFI: ${(parseFloat(100*building["Voix LFI du bureau"]) / parseFloat(building["Nombre d'électeurs du bureau"])).toFixed(1)} %`;
+
+          circle.bindTooltip(tooltipContent, {
+              permanent: false,
+              sticky: true,
+              direction: 'right',
+              offset: [10, 0],
+              opacity: 0.8,
+          });
         });
       }
     });
