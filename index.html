@@ -37,6 +37,9 @@ html, body {
                     }).addTo(map);
 
                     buildings.forEach(building => {
+                        if (building.Lat === undefined)
+                            return
+
                         const circle = L.circle([parseFloat(building.Lat), parseFloat(building.Long)], {
                             color: 'red',
                             fillColor: '#f03',
