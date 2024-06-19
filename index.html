@@ -44,7 +44,7 @@ html, body {
                             radius: parseFloat(building["Voix estimées"]) / 2 + 2, // Adjust the scaling factor as needed
                         }).addTo(map);
 
-                        const tooltipContent = `${building.Adresse}<br>Voix estimées: ${parseFloat(building["Voix estimées"]) < 0 ? 0 : parseFloat(building["Voix estimées"]).toFixed(1)}<br>Score LFI: ${(parseFloat(100*building["Voix LFI du bureau"]) / parseFloat(building["Nombre d'électeurs du bureau"])).toFixed(1)} %`;
+                        const tooltipContent = `${building.Adresse}<br>Voix estimées: ${parseFloat(building["Voix estimées"]) < 0 ? 0 : parseFloat(building["Voix estimées"]).toFixed(1)}<br>Score LFI: ${(parseFloat(100*building["Voix LFI du bureau"]) / parseFloat(building["Nombre d'électeurs du bureau"])).toFixed(1)} %<br>Nb logements: ${building["Nombre"]}`;
 
                         circle.bindTooltip(tooltipContent, {
                             permanent: false,
