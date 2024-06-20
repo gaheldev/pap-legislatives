@@ -14,68 +14,119 @@ html, body {
 
     #map {
         width: 100%;
-        height: 100%;
+        height: 90%;
     }
         </style>
     </head>
     <body>
         <div id="map"></div>
-        <form action="select_cluster">
+        <div id="select_cluster">
             <label for="cluster">Cluster:</label>
-            <input type="text" id="cluster" name="cluster">
-            <input type="submit" onclick="showBuildings()" value="Submit">
-        </form>
+            <!-- <input type="text" id="cluster" onchange="updateBuildings()" name="cluster"> -->
+            <select name="select" onchange="updateBuildings()" id="select">
+            </select>
+            <!-- <input type="text" id="cluster" onchange="showBuildings()" name="cluster"> onkeypress="this.onchange();" onpaste= "this.onchange();" oninput="this.onchange();" name="cluster"> -->
+            <!-- <input type="submit" onclick="showBuildings()" value="Submit"> -->
+        </div>
         <script>
+            const map = L.map('map');
+            buildings = {};
+            selectedCluster = 0;
+            clusterCircles = [];
+            const selectField = document.getElementById('select');
+
+            function updateBuildings() {
+                selectedCluster = document.getElementById('select').value;
+                console.log(selectedCluster);
+                showBuildings();
+            }
+
             function showBuildings() {
-                const selectedCluster = document.getElementById('cluster').value
+                if (selectedCluster != 0){
+                    clusterCircles.forEach(circle => {
+                        if (map.hasLayer(circle))
+                            map.removeLayer(circle)
+                    });
+                    map.addLayer(clusterCircles[selectedCluster])
+                } else {
+                    clusterCircles.forEach(circle => {
+                        map.addLayer(circle)
+                    });
+                }
+
+                const circles = L.featureGroup();
+                if (map.hasLayer(circles))
+                    map.removeLayer(circles)
+                map.addLayer(circles);
+            }
+
+            function createLayers() {
+                var opt = document.createElement("option");
+                opt.value= 0;
+                opt.innerHTML = 'all'; // whatever property it has
+                selectField.appendChild(opt);
+
+                buildings.forEach(building => {
+                    if (building.Lat === undefined)
+                        return
+
+                    if (clusterCircles[building.Cluster] === undefined) {
+                        clusterCircles[building.Cluster] = L.featureGroup();
+
+                        var opt = document.createElement("option");
+                        opt.value= building.Cluster;
+                        opt.innerHTML = building.Cluster; // whatever property it has
+
+                        // then append it to the select element
+                        selectField.appendChild(opt);
+                    }
+                    
+                    const circle = L.circle([parseFloat(building.Lat), parseFloat(building.Long)], {
+                        color: 'red',
+                        fillColor: '#f03',
+                        fillOpacity: 0.5,
+                        radius: 2 * (parseFloat(building["Voix estimées"]) + 15), // Adjust the scaling factor as needed
+                    }).addTo(clusterCircles[building.Cluster]);
+
+                    const tooltipContent = `${building.Adresse}<br>Voix estimées: ${parseFloat(building["Voix estimées"]) < 0 ? 0 : parseFloat(building["Voix estimées"]).toFixed(1)}<br>Score LFI: ${(parseFloat(100*building["Voix LFI du bureau"]) / parseFloat(building["Nombre d'électeurs du bureau"])).toFixed(1)} %<br>Nb logements: ${building["Nombre"]}<br>Binomes necessaires: ${parseInt(building['Nb Binomes'])}`;
+
+                    circle.bindTooltip(tooltipContent, {
+                        permanent: false,
+                        sticky: true,
+                        direction: 'right',
+                        offset: [10, 0],
+                        opacity: 0.8,
+                    });
+
+                    map.on('mousemove', function(e) {
+                        const radius = circle.getRadius();
+                        const distance = e.latlng.distanceTo(circle.getLatLng());
+
+                        if (distance < radius + 5) {
+                            circle.openTooltip();
+                        } else {
+                            circle.closeTooltip();
+                        }
+                    });
+                });
             }
             // Load the CSV data
-            Papa.parse("/hlms_voix_estimées.csv", {
+            Papa.parse("/hlms_clusters.csv", {
                 download: true,
                 header: true,
                 dynamicTyping: false, // Set dynamicTyping to false
                 complete: function(results) {
-                    const buildings = results.data;
+                    buildings = results.data;
                     console.log(buildings[0].Lat, buildings[0].Long); // Log the first building's coordinates
 
-                    const map = L.map('map').setView([parseFloat(buildings[0].Lat), parseFloat(buildings[0].Long)], 13);
+                    map.setView([parseFloat(buildings[0].Lat), parseFloat(buildings[0].Long)], 13);
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                         attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors',
                         maxZoom: 18,
                     }).addTo(map);
 
-                    buildings.forEach(building => {
-                        if (building.Lat === undefined)
-                            return
-
-                        const circle = L.circle([parseFloat(building.Lat), parseFloat(building.Long)], {
-                            color: 'red',
-                            fillColor: '#f03',
-                            fillOpacity: 0.5,
-                            radius: parseFloat(building["Voix estimées"]) / 2 + 2, // Adjust the scaling factor as needed
-                        }).addTo(map);
-
-                        const tooltipContent = `${building.Adresse}<br>Voix estimées: ${parseFloat(building["Voix estimées"]) < 0 ? 0 : parseFloat(building["Voix estimées"]).toFixed(1)}<br>Score LFI: ${(parseFloat(100*building["Voix LFI du bureau"]) / parseFloat(building["Nombre d'électeurs du bureau"])).toFixed(1)} %<br>Nb logements: ${building["Nombre"]}`;
-
-                        circle.bindTooltip(tooltipContent, {
-                            permanent: false,
-                            sticky: true,
-                            direction: 'right',
-                            offset: [10, 0],
-                            opacity: 0.8,
-                        });
-
-                        map.on('mousemove', function(e) {
-                            const radius = circle.getRadius();
-                            const distance = e.latlng.distanceTo(circle.getLatLng());
-
-                            if (distance < radius + 5) {
-                                circle.openTooltip();
-                            } else {
-                                circle.closeTooltip();
-                            }
-                        });
-                    });
+                    createLayers();
+                    showBuildings();
                 }
             });
         </script>
