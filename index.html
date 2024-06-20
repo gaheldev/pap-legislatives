@@ -25,12 +25,14 @@ html, body {
             <!-- <input type="text" id="cluster" onchange="updateBuildings()" name="cluster"> -->
             <select name="select" onchange="updateBuildings()" id="select">
             </select>
+            <label for="select" id="binomes"></label>
             <!-- <input type="text" id="cluster" onchange="showBuildings()" name="cluster"> onkeypress="this.onchange();" onpaste= "this.onchange();" oninput="this.onchange();" name="cluster"> -->
             <!-- <input type="submit" onclick="showBuildings()" value="Submit"> -->
         </div>
         <script>
             const map = L.map('map');
             buildings = {};
+            nb_binomes = {};
             selectedCluster = 0;
             clusterCircles = [];
             const selectField = document.getElementById('select');
@@ -48,7 +50,10 @@ html, body {
                             map.removeLayer(circle)
                     });
                     map.addLayer(clusterCircles[selectedCluster])
+                    console.log(nb_binomes[selectedCluster])
+                    document.getElementById('binomes').innerHTML = nb_binomes[selectedCluster] + ' binome(s) nécessaire(s)'
                 } else {
+                    document.getElementById('binomes').innerHTML = '';
                     clusterCircles.forEach(circle => {
                         map.addLayer(circle)
                     });
@@ -79,6 +84,9 @@ html, body {
 
                         // then append it to the select element
                         selectField.appendChild(opt);
+
+                        // initializes nb_binomes
+                        nb_binomes[building.Cluster] = parseInt(building['Nb Binomes']);
                     }
                     
                     const circle = L.circle([parseFloat(building.Lat), parseFloat(building.Long)], {
